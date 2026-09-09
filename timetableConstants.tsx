@@ -760,10 +760,25 @@ export const INITIAL_TIMETABLES: TimetableEntry[] = [
     year: 'I',
     department: 'CSE',
     subject: 'Programming in C',
-    subjectCode: 'S12BLH71',
+    subjectCode: 'S11BLH11',
     laboratory: 'Computer Society and Security Lab',
-    batch: 'D2',
-    faculty: 'Dr.N.Sridevi / Ms.P.Malathi',
+    batch: 'E2',
+    faculty: 'Dr.K.Lalithadevi / Dr.D.Sudha',
+    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
+  },
+      {
+    id: 'T-SAT-1C',
+    day: 'FRIDAY',
+    period: 3,
+    startTime: '11:15 AM',
+    endTime: '12:15 AM',
+    year: 'I',
+    department: 'CSE',
+    subject: 'Programming in C',
+    subjectCode: 'S11BLH11',
+    laboratory: 'Computer Society and Security Lab',
+    batch: 'E2',
+    faculty: 'Dr.K.Lalithadevi / Dr.D.Sudha',
     room: "ST.PAUL'S BLOCK-GROUND FLOOR"
   },
       {
