@@ -544,7 +544,6 @@ export const INITIAL_TIMETABLES: TimetableEntry[] = [
     startTime: '02:15 PM',
     endTime: '03:15 PM',
     year: 'III',
-    year: 'III',
     department: 'CSE',
     subject: 'Augmented and Virtual Reality',
     subjectCode: 'S11BPB51',
