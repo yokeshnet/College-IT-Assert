@@ -742,7 +742,6 @@ export const INITIAL_TIMETABLES: TimetableEntry[] = [
     period: 2,
     startTime: '10:00 AM',
     endTime: '11:00 AM',
-    year: 'I',
     year: 'II',
     department: 'CSE',
     subject: 'Programming in Java',
