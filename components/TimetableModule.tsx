@@ -1,967 +1,921 @@
-import { TimetableEntry, Subject, Faculty, TimeSlot } from './types';
+import React, { useState, useMemo } from 'react';
+import { TimetableEntry, Subject, Faculty, TimeSlot } from '../types';
+import { 
+  Calendar, 
+  Clock, 
+  Plus, 
+  Trash2, 
+  Edit3, 
+  BookOpen, 
+  Users, 
+  Copy, 
+  Search, 
+  Filter, 
+  X, 
+  Check, 
+  GraduationCap,
+  MapPin,
+  ChevronRight
+} from 'lucide-react';
 
-export const INITIAL_TIME_SLOTS: TimeSlot[] = [
-  { period: 1, startTime: '09:00 AM', endTime: '10:00 AM' },
-  { period: 2, startTime: '10:00 AM', endTime: '11:00 AM' },
-  { period: 3, startTime: '11:15 AM', endTime: '12:15 PM' },
-  { period: 4, startTime: '12:15 PM', endTime: '01:15 PM' },
-  { period: 5, startTime: '01:15 PM', endTime: '02:15 PM' },
-  { period: 6, startTime: '02:15 PM', endTime: '03:15 PM' }
-];
+interface TimetableModuleProps {
+  timetables: TimetableEntry[];
+  subjects: Subject[];
+  faculty: Faculty[];
+  timeSlots: TimeSlot[];
+  onAddTimetable: (entry: Omit<TimetableEntry, 'id'>) => Promise<void>;
+  onUpdateTimetable: (entry: TimetableEntry) => Promise<void>;
+  onDeleteTimetable: (id: string) => Promise<void>;
+  onDuplicateSemester: () => Promise<void>;
+  onAddSubject: (subj: Subject) => Promise<void>;
+  onAddFaculty: (fac: Faculty) => Promise<void>;
+  simulatedDay: string;
+  simulatedPeriod: number;
+}
 
-export const INITIAL_SUBJECTS: Subject[] = [
-  { subjectCode: 'S11BLH11', subjectName: 'Programming in C', department: 'CSE', year: 'I' },
-  { subjectCode: 'S11BPB51', subjectName: 'Augmented and Virtual Reality', department: 'CSE', year: 'III' },
-  { subjectCode: 'SCSB2501', subjectName: 'Computer Networks lab', department: 'CSE', year: 'III' },
-  { subjectCode: 'S11BLH51', subjectName: 'Software Engineering Design and Development', department: 'CSE', year: 'III' },
-  { subjectCode: 'S12BLH31', subjectName: 'Programming in Java', department: 'CSE', year: 'II' }
-];
+const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+const PERIOD_LIST = [1, 2, 3, 4, 5, 6];
 
-export const INITIAL_FACULTY: Faculty[] = [
-  { facultyId: 'F01', name: 'Dr.L.K.Joshila Grace', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F02', name: 'Ms.D.Devi', designation: 'Assistant Professor', department: 'CSE' },
-  { facultyId: 'F03', name: 'Dr.N.Sridevi', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F04', name: 'Ms.P.Malathi', designation: 'Assistant Professor', department: 'CSE' },
-  { facultyId: 'F05', name: 'Dr.P.Privietha', designation: 'Professor', department: 'CSE' },
-  { facultyId: 'F06', name: 'Ms.R.Velvizhi', designation: 'Assistant Professor', department: 'CSE' },
-  { facultyId: 'F07', name: 'Ms.D.Aishwarya', designation: 'Assistant Professor', department: 'CSE' },
-  { facultyId: 'F08', name: 'Dr.B.Gracelin Sheena', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F09', name: 'Dr.V.Nirmalrani', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F10', name: 'Dr.M.Mahasree', designation: 'Professor', department: 'CSE' },
-  { facultyId: 'F11', name: 'Dr.Shamreen Ahamed.B', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F12', name: 'Dr.G.Subathra', designation: 'Professor', department: 'CSE' },
-  { facultyId: 'F13', name: 'Dr.Srideivanai Nagarajan', designation: 'Professor', department: 'CSE' },
-  { facultyId: 'F14', name: 'Dr.Ramya G.Franklin', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F15', name: 'Dr.R.Asha', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F16', name: 'Dr. V. Ulagamuthalvi', designation: 'Professor', department: 'CSE' },
-  { facultyId: 'F17', name: 'Dr.S. Prayla Shyry', designation: 'Professor', department: 'CSE' },
-  { facultyId: 'F18', name: 'Dr.N.S.Usha', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F19', name: 'Dr.D.Sudha', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F20', name: 'Dr. Deepa.V', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F21', name: 'Ms.K.Madhushri', designation: 'Assistant Professor', department: 'CSE' },
-  { facultyId: 'F22', name: 'Dr.G.M.Karpura Dheepan', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F23', name: 'Dr.P.M.Lavanya', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F24', name: 'Dr.P.Ranjana', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F25', name: 'Dr.V.Surya', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F26', name: 'Dr.T.Judgi', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F27', name: 'Dr.T.Anitha', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F28', name: 'Dr. S. Jancy', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F29', name: 'Ms.S.Hemalatha', designation: 'Assistant Professor', department: 'CSE' },
-  { facultyId: 'F30', name: 'Dr.M.Maheswari', designation: 'Professor', department: 'CSE' },
-  { facultyId: 'F31', name: 'Dr. J. Refonaa', designation: 'Professor', department: 'CSE' },
-  { facultyId: 'F32', name: 'Dr. M. D. Anto Praveena', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F33', name: 'Dr. S. Prince Mary', designation: 'Professor', department: 'CSE' },
-  { facultyId: 'F34', name: 'Ms.Vanathi .M', designation: 'Assistant Professor', department: 'CSE' },
-  { facultyId: 'F35', name: 'Dr.D.Sheema', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F36', name: 'Dr. B. Ankayarkanni', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F37', name: 'Dr. D. Usha Nandini', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F38', name: 'Ms.Sandhiya.B', designation: 'Assistant Professor', department: 'CSE' },
-  { facultyId: 'F39', name: 'Ms.P.Kathambari', designation: 'Assistant Professor', department: 'CSE' },
-  { facultyId: 'F40', name: 'Dr.D.Saravanan', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F41', name: 'Dr. A. Sindhuja', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F42', name: 'Dr.P.Rajaseka', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F43', name: 'Dr.K.Lalithadevi', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F44', name: 'Ms.Kalaivani A', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F45', name: 'Dr.D.Sudha', designation: 'Associate Professor', department: 'CSE' },
-  { facultyId: 'F46', name: 'Dr.A.Mohana Priya ', designation: 'Associate Professor', department: 'CSE' }
-];
+export const TimetableModule: React.FC<TimetableModuleProps> = ({
+  timetables,
+  subjects,
+  faculty,
+  timeSlots,
+  onAddTimetable,
+  onUpdateTimetable,
+  onDeleteTimetable,
+  onDuplicateSemester,
+  onAddSubject,
+  onAddFaculty,
+  simulatedDay,
+  simulatedPeriod
+}) => {
+  const [selectedDay, setSelectedDay] = useState<string>(simulatedDay || 'MONDAY');
+  const [yearFilter, setYearFilter] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'schedule' | 'subjects' | 'faculty'>('schedule');
 
-export const INITIAL_TIMETABLES: TimetableEntry[] = [
-  // --- MONDAY ---
-  {
-    id: 'T-MON-1A',
-    day: 'MONDAY',
-    period: 1,
-    startTime: '09:00 AM',
-    endTime: '10:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'C4',
-    faculty: 'Dr. M. D. Anto Praveena / Dr. B. Ankayarkanni',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-MON-1B',
-    day: 'MONDAY',
-    period: 1,
-    startTime: '09:00 AM',
-    endTime: '10:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'D1',
-    faculty: 'Dr.D.Saravanan / Dr. A. Sindhuja',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-MON-2A',
-    day: 'MONDAY',
-    period: 2,
-    startTime: '10:00 AM',
-    endTime: '11:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'C4',
-    faculty: 'Dr. M. D. Anto Praveena / Dr. B. Ankayarkanni',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  
-  {
-    id: 'T-MON-2B',
-    day: 'MONDAY',
-    period: 2,
-    startTime: '10:00 AM',
-    endTime: '11:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'D1',
-    faculty: 'Dr.D.Saravanan / Dr. A. Sindhuja',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-MON-1C',
-    day: 'MONDAY',
-    period: 3,
-    startTime: '11:15 AM',
-    endTime: '12:15 AM',
-    year: 'I',
-    department: 'CSE',
-    subject: 'Programming C',
-    subjectCode: 'S11BLH11',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'E2',
-    faculty: 'Dr.K.Lalithadev / Dr.D.Sudha',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-MON-2C',
-    day: 'MONDAY',
-    period: 3,
-    startTime: '11:15 AM',
-    endTime: '12:15 AM',
-    year: 'I',
-    department: 'CSE',
-    subject: 'Programming C',
-    subjectCode: 'S11BLH11',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'E3',
-    faculty: 'Dr.A.Mohana Priya / Ms.Kalaivani A',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },  {
-    id: 'T-MON-1D',
-    day: 'MONDAY',
-    period: 4,
-    startTime: '12:15 AM',
-    endTime: '01:15 PM',
-    year: 'I',
-    department: 'CSE',
-    subject: 'Programming C',
-    subjectCode: 'S11BLH11',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'E2',
-    faculty: 'Dr.K.Lalithadev / Dr.D.Sudha',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-MON-2D',
-    day: 'MONDAY',
-    period: 4,
-    startTime: '12:15 AM',
-    endTime: '01:15 PM',
-    year: 'I',
-    department: 'CSE',
-    subject: 'Programming C',
-    subjectCode: 'S11BLH11',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'E3',
-    faculty: 'Dr.A.Mohana Priya / Ms.Kalaivani A',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-MON-5A',
-    day: 'MONDAY',
-    period: 5,
-    startTime: '01:15 PM',
-    endTime: '02:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A1',
-    faculty: 'Dr.Ramya G.Franklin / Dr.Shamreen Ahamed.B',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-MON-5B',
-    day: 'MONDAY',
-    period: 5,
-    startTime: '01:15 PM',
-    endTime: '02:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B1',
-    faculty: 'Dr.R.Asha / Dr. V. Ulagamuthalvi',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-MON-5A',
-    day: 'MONDAY',
-    period: 6,
-    startTime: '02:15 PM',
-    endTime: '03:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A1',
-    faculty: 'Dr.Ramya G.Franklin / Dr.Shamreen Ahamed.B',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-MON-5B',
-    day: 'MONDAY',
-    period: 6,
-    startTime: '02:15 PM',
-    endTime: '03:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B1',
-    faculty: 'Dr.R.Asha / Dr. V. Ulagamuthalvi',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
+  // Modals state
+  const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
 
-  // --- TUESDAY ---
-  {
-    id: 'T-TUE-1A',
-    day: 'TUESDAY',
-    period: 1,
-    startTime: '09:00 AM',
-    endTime: '10:00 AM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'CBCS',
-    subjectCode: 'SCSB4001',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'C2',
-    faculty: 'Dr. A.Mohana Priya',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-TUE-2A',
-    day: 'TUESDAY',
-    period: 2,
-    startTime: '10:00 AM',
-    endTime: '11:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'C2',
-    faculty: 'Dr. M. D. Anto Praveena / Dr. S. Prince Mary',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-TUE-2B',
-    day: 'TUESDAY',
-    period: 2,
-    startTime: '10:00 AM',
-    endTime: '11:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'C5',
-    faculty: 'Dr. D. Usha Nandini / Dr. B. Ankayarkanni',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-TUE-4A',
-    day: 'TUESDAY',
-    period: 4,
-    startTime: '12:15 PM',
-    endTime: '01:15 PM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'C2',
-    faculty: 'Dr. M. D. Anto Praveena / Dr. S. Prince Mary',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-TUE-4B',
-    day: 'TUESDAY',
-    period: 4,
-    startTime: '12:15 PM',
-    endTime: '01:15 PM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'C5',
-    faculty: 'Dr. D. Usha Nandini / Dr. B. Ankayarkanni',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-TUE-5A',
-    day: 'TUESDAY',
-    period: 5,
-    startTime: '01:15 PM',
-    endTime: '02:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Software Engineering Design and Development',
-    subjectCode: 'S11BLH51',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A2',
-    faculty: 'Dr.T.Judgi / Dr.T.Anitha',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-TUE-5B',
-    day: 'TUESDAY',
-    period: 5,
-    startTime: '01:15 PM',
-    endTime: '02:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Augmented and Virtual Reality',
-    subjectCode: 'S11BPB51',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B2',
-    faculty: 'Dr.Srideivanai Nagarajan',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-TUE-6A',
-    day: 'TUESDAY',
-    period: 6,
-    startTime: '02:15 PM',
-    endTime: '03:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Software Engineering Design and Development',
-    subjectCode: 'S11BLH51',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A2',
-    faculty: 'Dr.T.Judgi / Dr.T.Anitha',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-TUE-6B',
-    day: 'TUESDAY',
-    period: 6,
-    startTime: '02:15 PM',
-    endTime: '03:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Augmented and Virtual Reality',
-    subjectCode: 'S11BPB51',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B2',
-    faculty: 'Dr.Srideivanai Nagarajan',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
+  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
+  const [isFacultyModalOpen, setIsFacultyModalOpen] = useState(false);
 
-  // --- WEDNESDAY ---
-  {
-    id: 'T-WED-1A',
-    day: 'WEDNESDAY',
-    period: 1,
-    startTime: '09:00 AM',
-    endTime: '10:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B3',
-    faculty: 'Dr. D. Usha Nandini / Dr. S. Prince Mary',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-WED-1B',
-    day: 'WEDNESDAY',
-    period: 1,
-    startTime: '09:00 AM',
-    endTime: '10:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B4',
-    faculty: 'Ms.Sandhiya.B / Ms.P.Kathambari',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-    {
-    id: 'T-WED-2A',
-    day: 'WEDNESDAY',
-    period: 2,
-    startTime: '10:00 AM',
-    endTime: '11:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B3',
-    faculty: 'Dr. D. Usha Nandini / Dr. S. Prince Mary',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-WED-2B',
-    day: 'WEDNESDAY',
-    period: 2,
-    startTime: '10:00 AM',
-    endTime: '11:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B4',
-    faculty: 'Ms.Sandhiya.B / Ms.P.Kathambari',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-WED-3A',
-    day: 'WEDNESDAY',
-    period: 3,
-    startTime: '11:15 AM',
-    endTime: '12:15 PM',
-    year: 'I',
-    department: 'CSE',
-    subject: 'Programming in C',
-    subjectCode: 'S11BLH11',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A1',
-    faculty: 'Ms.P.Kabitha / Dr.A.Jemshia',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-WED-3B',
-    day: 'WEDNESDAY',
-    period: 3,
-    startTime: '11:15 AM',
-    endTime: '12:15 PM',
-    year: 'I',
-    department: 'CSE',
-    subject: 'Programming in C',
-    subjectCode: 'S11BLH11',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B1',
-    faculty: 'Dr. A. Pravin / Dr. T. Prem Jacob',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-WED-4A',
-    day: 'WEDNESDAY',
-    period: 4,
-    startTime: '12:15 pM',
-    endTime: '01:15 PM',
-    year: 'I',
-    department: 'CSE',
-    subject: 'Programming in C',
-    subjectCode: 'S11BLH11',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A1',
-    faculty: 'Ms.P.Kabitha / Dr.A.Jemshia',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-WED-4B',
-    day: 'WEDNESDAY',
-    period: 4,
-    startTime: '12:15 pM',
-    endTime: '01:15 PM',
-    year: 'I',
-    department: 'CSE',
-    subject: 'Programming in C',
-    subjectCode: 'S11BLH11',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B1',
-    faculty: 'Dr. A. Pravin / Dr. T. Prem Jacob',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-WED-5A',
-    day: 'WEDNESDAY',
-    period: 5,
-    startTime: '01:15 PM',
-    endTime: '02:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Augmented and Virtual Reality',
-    subjectCode: 'S11BPB51',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'C1',
-    faculty: 'Dr.R.Rahin Batcha',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-WED-5B',
-    day: 'WEDNESDAY',
-    period: 5,
-    startTime: '01:15 PM',
-    endTime: '02:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A3',
-    faculty: 'Dr. V. Ulagamuthalvi / Dr.S. Prayla Shyry',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-    {
-    id: 'T-WED-6A',
-    day: 'WEDNESDAY',
-    period: 6,
-    startTime: '02:15 PM',
-    endTime: '03:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Augmented and Virtual Reality',
-    subjectCode: 'S11BPB51',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'C1',
-    faculty: 'Dr.R.Rahin Batcha',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-WED-6B',
-    day: 'WEDNESDAY',
-    period: 6,
-    startTime: '02:15 PM',
-    endTime: '03:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A3',
-    faculty: 'Dr. V. Ulagamuthalvi / Dr.S. Prayla Shyry',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
+  // Form states for Timetable Entry
+  const [formDay, setFormDay] = useState<string>('MONDAY');
+  const [formPeriod, setFormPeriod] = useState<number>(1);
+  const [formYear, setFormYear] = useState<string>('II');
+  const [formDepartment, setFormDepartment] = useState<string>('CSE');
+  const [formSubject, setFormSubject] = useState<string>('');
+  const [formSubjectCode, setFormSubjectCode] = useState<string>('');
+  const [formLaboratory, setFormLaboratory] = useState<string>('Computer Society and Security Lab');
+  const [formBatch, setFormBatch] = useState<string>('');
+  const [formFaculty, setFormFaculty] = useState<string>('');
+  const [formRoom, setFormRoom] = useState<string>("ST.PAUL'S BLOCK-GROUND FLOOR");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- THURSDAY ---
-  {
-    id: 'T-THU-2A',
-    day: 'THURSDAY',
-    period: 2,
-    startTime: '10:00 AM',
-    endTime: '11:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A5',
-    faculty: 'Dr.M.Maheswari / Dr. J. Refonaa',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-THU-2B',
-    day: 'THURSDAY',
-    period: 2,
-    startTime: '10:00 AM',
-    endTime: '11:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B2',
-    faculty: 'Ms.Vanathi .M / Dr.D.Sheema',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-THU-4A',
-    day: 'THURSDAY',
-    period: 4,
-    startTime: '12:15 PM',
-    endTime: '01:15 PM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A5',
-    faculty: 'Dr.M.Maheswari / Dr. J. Refonaa',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-THU-4B',
-    day: 'THURSDAY',
-    period: 4,
-    startTime: '12:15 PM',
-    endTime: '01:15 PM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B2',
-    faculty: 'Ms.Vanathi .M / Dr.D.Sheema',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-THU-5A',
-    day: 'THURSDAY',
-    period: 5,
-    startTime: '01:15 PM',
-    endTime: '02:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A4',
-    faculty: 'Dr. Deepa.V / Ms.K.Madhushri',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-THU-5B',
-    day: 'THURSDAY',
-    period: 5,
-    startTime: '01:15 PM',
-    endTime: '02:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B4',
-    faculty: 'Dr.G.M.Karpura Dheepan / Dr. L. K. Joshila Grace',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-    {
-    id: 'T-THU-6A',
-    day: 'THURSDAY',
-    period: 6,
-    startTime: '02:15 PM',
-    endTime: '03:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A4',
-    faculty: 'Dr. Deepa.V / Ms.K.Madhushri',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-THU-6B',
-    day: 'THURSDAY',
-    period: 6,
-    startTime: '02:15 PM',
-    endTime: '03:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B4',
-    faculty: 'Dr.G.M.Karpura Dheepan / Dr. L. K. Joshila Grace',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
+  // Form state for Subject
+  const [newSubCode, setNewSubCode] = useState('');
+  const [newSubName, setNewSubName] = useState('');
+  const [newSubDept, setNewSubDept] = useState('CSE');
+  const [newSubYear, setNewSubYear] = useState('II');
 
-  // --- FRIDAY ---
-  {
-    id: 'T-FRI-1A',
-    day: 'FRIDAY',
-    period: 1,
-    startTime: '09:00 AM',
-    endTime: '10:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'D5',
-    faculty: 'Dr.M.Maheswari / Dr. J. Refonaa',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-FRI-1B',
-    day: 'FRIDAY',
-    period: 1,
-    startTime: '09:00 AM',
-    endTime: '10:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B1',
-    faculty: 'Dr.Karthika.J / Ms.P.Kathambari',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-   {
-    id: 'T-FRI-2A',
-    day: 'FRIDAY',
-    period: 2,
-    startTime: '10:00 AM',
-    endTime: '11:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'D5',
-    faculty: 'Dr.M.Maheswari / Dr. J. Refonaa',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-FRI-2B',
-    day: 'FRIDAY',
-    period: 2,
-    startTime: '10:00 AM',
-    endTime: '11:00 AM',
-    year: 'II',
-    department: 'CSE',
-    subject: 'Programming in Java',
-    subjectCode: 'S12BLH31',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B1',
-    faculty: 'Dr.Karthika.J / Ms.P.Kathambari',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-    {
-    id: 'T-FRI-1C',
-    day: 'FRIDAY',
-    period: 3,
-    startTime: '11:15 AM',
-    endTime: '12:15 AM',
-    year: 'I',
-    department: 'CSE',
-    subject: 'Programming in C',
-    subjectCode: 'S11BLH11',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'E2',
-    faculty: 'Dr.K.Lalithadevi / Dr.D.Sudha',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-      {
-    id: 'T-FRI-2C',
-    day: 'FRIDAY',
-    period: 3,
-    startTime: '11:15 AM',
-    endTime: '12:15 AM',
-    year: 'I',
-    department: 'CSE',
-    subject: 'Programming in C',
-    subjectCode: 'S11BLH11',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'E4',
-    faculty: 'Dr.A.Mohana Priya',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-      {
-    id: 'T-FRI-1D',
-    day: 'FRIDAY',
-    period: 4,
-    startTime: '12:15 PM',
-    endTime: '1:15 PM',
-    year: 'I',
-    department: 'CSE',
-    subject: 'Programming in C',
-    subjectCode: 'S11BLH11',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'E2',
-    faculty: 'Dr.K.Lalithadevi / Dr.D.Sudha',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-      {
-    id: 'T-FRI-2D',
-    day: 'FRIDAY',
-    period: 4,
-    startTime: '12:15 PM',
-    endTime: '1:15 PM',
-    year: 'I',
-    department: 'CSE',
-    subject: 'Programming in C',
-    subjectCode: 'S11BLH11',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'E4',
-    faculty: 'Dr.A.Mohana Priya',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
+  // Form state for Faculty
+  const [newFacId, setNewFacId] = useState('');
+  const [newFacName, setNewFacName] = useState('');
+  const [newFacDesig, setNewFacDesig] = useState('Associate Professor');
+  const [newFacDept, setNewFacDept] = useState('CSE');
 
-  {
-    id: 'T-FRI-5A',
-    day: 'FRIDAY',
-    period: 5,
-    startTime: '01:15 PM',
-    endTime: '02:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A5',
-    faculty: 'Dr.P.M.Lavanya / Dr.P.Ranjana',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-FRI-5B',
-    day: 'FRIDAY',
-    period: 5,
-    startTime: '01:15 PM',
-    endTime: '02:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B5',
-    faculty: 'Dr.V.Surya / Ms.K.Madhushri',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-    {
-    id: 'T-FRI-5A',
-    day: 'FRIDAY',
-    period: 6,
-    startTime: '02:15 PM',
-    endTime: '03:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A5',
-    faculty: 'Dr.P.M.Lavanya / Dr.P.Ranjana',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-FRI-5B',
-    day: 'FRIDAY',
-    period: 6,
-    startTime: '02:15 PM',
-    endTime: '03:15 PM',
-    year: 'III',
-    department: 'CSE',
-    subject: 'Computer Networks lab',
-    subjectCode: 'SCSB2501',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'B5',
-    faculty: 'Dr.V.Surya / Ms.K.Madhushri',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
+  // Helper mapping for period times
+  const periodTimeMap = useMemo(() => {
+    const map: Record<number, { startTime: string; endTime: string }> = {
+      1: { startTime: '09:00 AM', endTime: '10:00 AM' },
+      2: { startTime: '10:00 AM', endTime: '11:00 AM' },
+      3: { startTime: '11:15 AM', endTime: '12:15 PM' },
+      4: { startTime: '12:15 PM', endTime: '01:15 PM' },
+      5: { startTime: '01:15 PM', endTime: '02:15 PM' },
+      6: { startTime: '02:15 PM', endTime: '03:15 PM' }
+    };
+    timeSlots.forEach(s => {
+      map[s.period] = { startTime: s.startTime, endTime: s.endTime };
+    });
+    return map;
+  }, [timeSlots]);
 
-  // --- SATURDAY ---
-  {
-    id: 'T-SAT-1A',
-    day: 'SATURDAY',
-    period: 1,
-    startTime: '09:00 AM',
-    endTime: '10:00 AM',
-    year: 'IV',
-    department: 'CSE',
-    subject: 'Big Data Analytics',
-    subjectCode: 'S12BLH71',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A2',
-    faculty: 'Dr.N.Sridevi / Ms.P.Malathi',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-SAT-1B',
-    day: 'SATURDAY',
-    period: 1,
-    startTime: '09:00 AM',
-    endTime: '10:00 AM',
-    year: 'IV',
-    department: 'CSE',
-    subject: 'Big Data Analytics',
-    subjectCode: 'S12BLH71',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'G1',
-    faculty: 'Dr.Shamreen Ahamed.B / Dr.G.Subathra',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-   {
-    id: 'T-SAT-1A',
-    day: 'SATURDAY',
-    period: 2,
-    startTime: '10:00 AM',
-    endTime: '11:00 AM',
-    year: 'IV',
-    department: 'CSE',
-    subject: 'Big Data Analytics',
-    subjectCode: 'S12BLH71',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A2',
-    faculty: 'Dr.N.Sridevi / Ms.P.Malathi',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-SAT-1B',
-    day: 'SATURDAY',
-    period: 2,
-    startTime: '10:00 AM',
-    endTime: '11:00 AM',
-    year: 'IV',
-    department: 'CSE',
-    subject: 'Big Data Analytics',
-    subjectCode: 'S12BLH71',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'G1',
-    faculty: 'Dr.Shamreen Ahamed.B / Dr.G.Subathra',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-SAT-3A',
-    day: 'SATURDAY',
-    period: 3,
-    startTime: '11:15 AM',
-    endTime: '12:15 PM',
-    year: 'IV',
-    department: 'CSE',
-    subject: 'Big Data Analytics',
-    subjectCode: 'S12BLH71',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'A1',
-    faculty: 'Dr.L.K.Joshila Grace / Ms.D.Devi',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
-  {
-    id: 'T-SAT-3B',
-    day: 'SATURDAY',
-    period: 3,
-    startTime: '11:15 AM',
-    endTime: '12:15 PM',
-    year: 'IV',
-    department: 'CSE',
-    subject: 'Big Data Analytics',
-    subjectCode: 'S12BLH71',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'D1',
-    faculty: 'Dr.P.Privietha / Ms.R.Velvizhi',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  }
-];
+  // Filtered timetable entries
+  const filteredEntries = useMemo(() => {
+    return timetables.filter(t => {
+      const matchDay = t.day === selectedDay;
+      const matchYear = yearFilter === 'ALL' || t.year === yearFilter;
+      const matchSearch = !searchQuery || 
+        t.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.subjectCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.batch.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.faculty.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchDay && matchYear && matchSearch;
+    });
+  }, [timetables, selectedDay, yearFilter, searchQuery]);
+
+  // Open modal for creating new entry
+  const handleOpenAddEntry = (day?: string, period?: number) => {
+    setEditingEntry(null);
+    setFormDay(day || selectedDay);
+    setFormPeriod(period || 1);
+    setFormYear('II');
+    setFormDepartment('CSE');
+    setFormSubject(subjects[0]?.subjectName || '');
+    setFormSubjectCode(subjects[0]?.subjectCode || '');
+    setFormLaboratory('Computer Society and Security Lab');
+    setFormBatch('');
+    setFormFaculty(faculty[0]?.name || '');
+    setFormRoom("ST.PAUL'S BLOCK-GROUND FLOOR");
+    setIsEntryModalOpen(true);
+  };
+
+  // Open modal for editing existing entry
+  const handleOpenEditEntry = (entry: TimetableEntry) => {
+    setEditingEntry(entry);
+    setFormDay(entry.day);
+    setFormPeriod(entry.period);
+    setFormYear(entry.year);
+    setFormDepartment(entry.department);
+    setFormSubject(entry.subject);
+    setFormSubjectCode(entry.subjectCode);
+    setFormLaboratory(entry.laboratory);
+    setFormBatch(entry.batch);
+    setFormFaculty(entry.faculty);
+    setFormRoom(entry.room);
+    setIsEntryModalOpen(true);
+  };
+
+  // Submit timetable entry form
+  const handleSaveEntry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    const times = periodTimeMap[formPeriod] || { startTime: '09:00 AM', endTime: '10:00 AM' };
+
+    try {
+      if (editingEntry) {
+        await onUpdateTimetable({
+          ...editingEntry,
+          day: formDay,
+          period: formPeriod,
+          startTime: times.startTime,
+          endTime: times.endTime,
+          year: formYear,
+          department: formDepartment,
+          subject: formSubject,
+          subjectCode: formSubjectCode,
+          laboratory: formLaboratory,
+          batch: formBatch.toUpperCase(),
+          faculty: formFaculty,
+          room: formRoom
+        });
+      } else {
+        await onAddTimetable({
+          day: formDay,
+          period: formPeriod,
+          startTime: times.startTime,
+          endTime: times.endTime,
+          year: formYear,
+          department: formDepartment,
+          subject: formSubject,
+          subjectCode: formSubjectCode,
+          laboratory: formLaboratory,
+          batch: formBatch.toUpperCase(),
+          faculty: formFaculty,
+          room: formRoom
+        });
+      }
+      setIsEntryModalOpen(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle subject change to auto-sync subjectCode
+  const handleSubjectChange = (name: string) => {
+    setFormSubject(name);
+    const found = subjects.find(s => s.subjectName === name);
+    if (found) {
+      setFormSubjectCode(found.subjectCode);
+      setFormYear(found.year);
+    }
+  };
+
+  // Handle subject save
+  const handleSaveSubject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubCode.trim() || !newSubName.trim()) return;
+    setIsSubmitting(true);
+    try {
+      await onAddSubject({
+        subjectCode: newSubCode.trim().toUpperCase(),
+        subjectName: newSubName.trim(),
+        department: newSubDept,
+        year: newSubYear
+      });
+      setNewSubCode('');
+      setNewSubName('');
+      setIsSubjectModalOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle faculty save
+  const handleSaveFaculty = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFacId.trim() || !newFacName.trim()) return;
+    setIsSubmitting(true);
+    try {
+      await onAddFaculty({
+        facultyId: newFacId.trim().toUpperCase(),
+        name: newFacName.trim(),
+        designation: newFacDesig,
+        department: newFacDept
+      });
+      setNewFacId('');
+      setNewFacName('');
+      setIsFacultyModalOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
+      {/* Top Header Card */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-violet-400">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                <span>Laboratory Timetable Matrix</span>
+              </h2>
+              <p className="text-slate-400 text-xs mt-0.5">
+                Computer Society & Security Lab • Department of Computer Science & Engineering
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={() => handleOpenAddEntry()}
+            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all shadow-lg shadow-violet-600/20 active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Class Slot</span>
+          </button>
+
+          <button
+            onClick={() => onDuplicateSemester()}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3.5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all border border-slate-700 active:scale-95"
+            title="Duplicate current timetable schedule"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Duplicate</span>
+          </button>
+
+          <button
+            onClick={() => setIsSubjectModalOpen(true)}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3.5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all border border-slate-700 active:scale-95"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Subjects</span>
+          </button>
+
+          <button
+            onClick={() => setIsFacultyModalOpen(true)}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3.5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all border border-slate-700 active:scale-95"
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Faculty</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs: Schedule | Subjects Directory | Faculty Directory */}
+      <div className="flex items-center gap-3 border-b border-slate-800/80 pb-3">
+        <button
+          onClick={() => setActiveTab('schedule')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+            activeTab === 'schedule'
+              ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          }`}
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          <span>Weekly Schedule</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('subjects')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+            activeTab === 'subjects'
+              ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          }`}
+        >
+          <BookOpen className="w-3.5 h-3.5" />
+          <span>Subjects ({subjects.length})</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('faculty')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+            activeTab === 'faculty'
+              ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>Faculty Directory ({faculty.length})</span>
+        </button>
+      </div>
+
+      {activeTab === 'schedule' && (
+        <div className="space-y-6">
+          {/* Day Selector Pills & Filter Controls */}
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+            {/* Days Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar bg-slate-900/60 p-1.5 rounded-2xl border border-slate-800/80">
+              {DAYS.map(day => {
+                const isSelected = selectedDay === day;
+                const isToday = simulatedDay === day;
+                return (
+                  <button
+                    key={day}
+                    onClick={() => setSelectedDay(day)}
+                    className={`relative px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-violet-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                    }`}
+                  >
+                    <span>{day.substring(0, 3)}</span>
+                    {isToday && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="flex items-center gap-3">
+              {/* Year Filter */}
+              <div className="flex items-center gap-2 bg-slate-900 px-3 py-2 rounded-xl border border-slate-800">
+                <GraduationCap className="w-3.5 h-3.5 text-slate-500" />
+                <select
+                  value={yearFilter}
+                  onChange={e => setYearFilter(e.target.value)}
+                  className="bg-transparent text-[10px] font-black text-slate-300 uppercase tracking-widest outline-none border-0 cursor-pointer"
+                >
+                  <option value="ALL">All Years</option>
+                  <option value="I">Year I</option>
+                  <option value="II">Year II</option>
+                  <option value="III">Year III</option>
+                  <option value="IV">Year IV</option>
+                </select>
+              </div>
+
+              {/* Search */}
+              <div className="relative flex-1 sm:w-60">
+                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="SEARCH CLASS, BATCH..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl py-2 pl-9 pr-3 text-[10px] font-black text-white placeholder:text-slate-600 uppercase tracking-wider outline-none focus:border-violet-500/50"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Schedule Table / Grid */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+            <div className="p-4 sm:p-6 border-b border-slate-800 bg-slate-900/60 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-black text-white uppercase tracking-wider">{selectedDay} Schedule</span>
+                {simulatedDay === selectedDay && (
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-[8px] font-black uppercase tracking-widest">
+                    ACTIVE DAY
+                  </span>
+                )}
+              </div>
+              <span className="text-slate-400 text-[10px] font-bold">
+                {filteredEntries.length} Classes Scheduled
+              </span>
+            </div>
+
+            <div className="divide-y divide-slate-800/80">
+              {PERIOD_LIST.map(periodNum => {
+                const slotTimes = periodTimeMap[periodNum] || { startTime: '09:00 AM', endTime: '10:00 AM' };
+                const periodEntries = filteredEntries.filter(t => t.period === periodNum);
+                const isCurrentPeriod = selectedDay === simulatedDay && simulatedPeriod === periodNum;
+
+                return (
+                  <div 
+                    key={periodNum}
+                    className={`p-4 sm:p-6 transition-all ${
+                      isCurrentPeriod ? 'bg-violet-950/20 border-l-4 border-l-violet-500' : 'hover:bg-slate-850/40'
+                    }`}
+                  >
+                    <div className="flex flex-col md:flex-row md:items-start gap-4">
+                      {/* Period Header Column */}
+                      <div className="w-full md:w-48 flex-shrink-0 flex md:flex-col items-center md:items-start justify-between md:justify-start gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-black uppercase tracking-wider ${isCurrentPeriod ? 'text-violet-400' : 'text-slate-300'}`}>
+                            Period {periodNum}
+                          </span>
+                          {isCurrentPeriod && (
+                            <span className="px-1.5 py-0.5 rounded bg-violet-600 text-white text-[7px] font-black uppercase tracking-widest">
+                              LIVE
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono mt-0.5">
+                          <Clock className="w-3 h-3 text-slate-500" />
+                          <span>{slotTimes.startTime} - {slotTimes.endTime}</span>
+                        </div>
+                        <button
+                          onClick={() => handleOpenAddEntry(selectedDay, periodNum)}
+                          className="mt-2 hidden md:flex items-center gap-1 text-[8px] font-black text-slate-500 hover:text-violet-400 uppercase tracking-widest transition-colors"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Assign</span>
+                        </button>
+                      </div>
+
+                      {/* Entries List for this Period */}
+                      <div className="flex-1">
+                        {periodEntries.length > 0 ? (
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                            {periodEntries.map(entry => (
+                              <div
+                                key={entry.id}
+                                className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 hover:border-violet-500/40 transition-all group relative"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-0.5 rounded-lg bg-violet-600/15 border border-violet-500/25 text-violet-400 text-[9px] font-black font-mono">
+                                        {entry.subjectCode}
+                                      </span>
+                                      <span className="px-2 py-0.5 rounded-lg bg-blue-600/15 border border-blue-500/25 text-blue-400 text-[9px] font-black uppercase">
+                                        Batch: {entry.batch}
+                                      </span>
+                                      <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[8px] font-bold">
+                                        Year {entry.year}
+                                      </span>
+                                    </div>
+                                    <h4 className="text-sm font-bold text-white mt-2 group-hover:text-violet-300 transition-colors">
+                                      {entry.subject}
+                                    </h4>
+                                  </div>
+
+                                  {/* Action Buttons */}
+                                  <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      onClick={() => handleOpenEditEntry(entry)}
+                                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                                      title="Edit Class"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => onDeleteTimetable(entry.id)}
+                                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors"
+                                      title="Delete Class"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="mt-3 pt-3 border-t border-slate-850 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[10px] text-slate-400">
+                                  <div className="flex items-center gap-1.5">
+                                    <Users className="w-3 h-3 text-slate-500 flex-shrink-0" />
+                                    <span className="truncate max-w-[240px]" title={entry.faculty}>
+                                      {entry.faculty}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-slate-500 text-[9px]">
+                                    <MapPin className="w-3 h-3" />
+                                    <span className="truncate max-w-[160px]">{entry.laboratory}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between p-4 bg-slate-950/30 rounded-2xl border border-slate-850 border-dashed">
+                            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                              Free Lab Slot • No Class Scheduled
+                            </span>
+                            <button
+                              onClick={() => handleOpenAddEntry(selectedDay, periodNum)}
+                              className="text-[9px] font-black text-violet-400 hover:text-violet-300 uppercase tracking-widest flex items-center gap-1"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Schedule</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Subjects Directory Tab */}
+      {activeTab === 'subjects' && (
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-black text-white">Course Curriculum & Subjects</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Configured laboratory curriculum course codes</p>
+            </div>
+            <button
+              onClick={() => setIsSubjectModalOpen(true)}
+              className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Subject</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {subjects.map(s => (
+              <div key={s.subjectCode} className="bg-slate-950/60 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="px-2 py-0.5 rounded bg-violet-600/15 border border-violet-500/25 text-violet-400 text-[10px] font-mono font-black">
+                      {s.subjectCode}
+                    </span>
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">
+                      Year {s.year} • {s.department}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-white mt-1">{s.subjectName}</h4>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Faculty Directory Tab */}
+      {activeTab === 'faculty' && (
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-black text-white">Faculty & Instructors Directory</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Faculty members assigned to laboratory practical sessions</p>
+            </div>
+            <button
+              onClick={() => setIsFacultyModalOpen(true)}
+              className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Faculty</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {faculty.map(f => (
+              <div key={f.facultyId} className="bg-slate-950/60 border border-slate-800 p-4 rounded-2xl flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-violet-600/15 border border-violet-500/25 flex items-center justify-center text-violet-400 text-xs font-black">
+                  {f.facultyId}
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white">{f.name}</h4>
+                  <p className="text-[9px] text-slate-500">{f.designation} • {f.department}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Add / Edit Timetable Entry */}
+      {isEntryModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700 w-full max-w-xl rounded-3xl p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <h3 className="text-lg font-black text-white tracking-tight">
+                {editingEntry ? 'Edit Class Timetable Slot' : 'Add New Class Slot'}
+              </h3>
+              <button
+                onClick={() => setIsEntryModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEntry} className="space-y-4 mt-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Day</label>
+                  <select
+                    value={formDay}
+                    onChange={e => setFormDay(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                  >
+                    {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Period</label>
+                  <select
+                    value={formPeriod}
+                    onChange={e => setFormPeriod(Number(e.target.value))}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                  >
+                    {PERIOD_LIST.map(p => (
+                      <option key={p} value={p}>
+                        Period {p} ({periodTimeMap[p]?.startTime} - {periodTimeMap[p]?.endTime})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Batch Code</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. C4, A1, B2"
+                    value={formBatch}
+                    onChange={e => setFormBatch(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white uppercase outline-none focus:border-violet-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Year</label>
+                  <select
+                    value={formYear}
+                    onChange={e => setFormYear(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                  >
+                    <option value="I">I Year</option>
+                    <option value="II">II Year</option>
+                    <option value="III">III Year</option>
+                    <option value="IV">IV Year</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Dept</label>
+                  <input
+                    type="text"
+                    value={formDepartment}
+                    onChange={e => setFormDepartment(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Subject Name</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Programming in Java"
+                    value={formSubject}
+                    onChange={e => handleSubjectChange(e.target.value)}
+                    className="flex-1 bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                  />
+                  {subjects.length > 0 && (
+                    <select
+                      onChange={e => handleSubjectChange(e.target.value)}
+                      className="bg-slate-800 border border-slate-700 rounded-xl px-2 text-[10px] text-slate-400 outline-none"
+                    >
+                      <option value="">Choose preset...</option>
+                      {subjects.map(s => (
+                        <option key={s.subjectCode} value={s.subjectName}>{s.subjectName}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Subject Code</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. S12BLH31"
+                    value={formSubjectCode}
+                    onChange={e => setFormSubjectCode(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white font-mono uppercase outline-none focus:border-violet-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Room / Floor</label>
+                  <input
+                    type="text"
+                    value={formRoom}
+                    onChange={e => setFormRoom(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Faculty / Staff</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Dr. M. D. Anto Praveena / Dr. B. Ankayarkanni"
+                  value={formFaculty}
+                  onChange={e => setFormFaculty(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Laboratory Location</label>
+                <input
+                  type="text"
+                  value={formLaboratory}
+                  onChange={e => setFormLaboratory(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                />
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEntryModalOpen(false)}
+                  className="flex-1 py-3 text-xs font-black text-slate-400 hover:text-white uppercase tracking-wider"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-[2] bg-violet-600 hover:bg-violet-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-violet-600/20 active:scale-95 disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Saving...' : (editingEntry ? 'Update Entry' : 'Add Class')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Add Subject */}
+      {isSubjectModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <h3 className="text-base font-black text-white">Add Curriculum Subject</h3>
+              <button onClick={() => setIsSubjectModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveSubject} className="space-y-4 mt-6">
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Subject Code</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. S12BLH31"
+                  value={newSubCode}
+                  onChange={e => setNewSubCode(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white uppercase font-mono outline-none focus:border-violet-500"
+                />
+              </div>
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Subject Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Programming in Java"
+                  value={newSubName}
+                  onChange={e => setNewSubName(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Year</label>
+                  <select
+                    value={newSubYear}
+                    onChange={e => setNewSubYear(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                  >
+                    <option value="I">Year I</option>
+                    <option value="II">Year II</option>
+                    <option value="III">Year III</option>
+                    <option value="IV">Year IV</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Department</label>
+                  <input
+                    type="text"
+                    value={newSubDept}
+                    onChange={e => setNewSubDept(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                  />
+                </div>
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setIsSubjectModalOpen(false)} className="flex-1 py-3 text-xs font-black text-slate-400 uppercase">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="flex-[2] bg-violet-600 hover:bg-violet-500 text-white font-black py-3 rounded-xl text-xs uppercase">Save Subject</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Add Faculty */}
+      {isFacultyModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <h3 className="text-base font-black text-white">Add Faculty Member</h3>
+              <button onClick={() => setIsFacultyModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveFaculty} className="space-y-4 mt-6">
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Faculty ID</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. F47"
+                  value={newFacId}
+                  onChange={e => setNewFacId(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white uppercase font-mono outline-none focus:border-violet-500"
+                />
+              </div>
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Dr. Alex Johnson"
+                  value={newFacName}
+                  onChange={e => setNewFacName(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Designation</label>
+                  <select
+                    value={newFacDesig}
+                    onChange={e => setNewFacDesig(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                  >
+                    <option value="Professor">Professor</option>
+                    <option value="Associate Professor">Associate Professor</option>
+                    <option value="Assistant Professor">Assistant Professor</option>
+                    <option value="Lab Assistant">Lab Assistant</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Department</label>
+                  <input
+                    type="text"
+                    value={newFacDept}
+                    onChange={e => setNewFacDept(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-violet-500"
+                  />
+                </div>
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setIsFacultyModalOpen(false)} className="flex-1 py-3 text-xs font-black text-slate-400 uppercase">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="flex-[2] bg-violet-600 hover:bg-violet-500 text-white font-black py-3 rounded-xl text-xs uppercase">Save Faculty</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
