@@ -811,21 +811,7 @@ export const INITIAL_TIMETABLES: TimetableEntry[] = [
     faculty: 'Dr.A.Mohana Priya',
     room: "ST.PAUL'S BLOCK-GROUND FLOOR"
   },
-      {
-    id: 'T-SAT-1A',
-    day: 'FRIDAY',
-    period: 4,
-    startTime: '11:15 AM',
-    endTime: '12:15 AM',
-    year: 'IV',
-    department: 'CSE',
-    subject: 'Big Data Analytics',
-    subjectCode: 'S12BLH71',
-    laboratory: 'Computer Society and Security Lab',
-    batch: 'D2',
-    faculty: 'Dr.N.Sridevi / Ms.P.Malathi',
-    room: "ST.PAUL'S BLOCK-GROUND FLOOR"
-  },
+
   {
     id: 'T-FRI-5A',
     day: 'FRIDAY',
