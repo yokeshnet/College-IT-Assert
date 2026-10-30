@@ -797,7 +797,7 @@ export const INITIAL_TIMETABLES: TimetableEntry[] = [
     room: "ST.PAUL'S BLOCK-GROUND FLOOR"
   },
       {
-    id: 'T-SAT-2D',
+    id: 'T-FRI-2D',
     day: 'FRIDAY',
     period: 4,
     startTime: '12:15 PM',
