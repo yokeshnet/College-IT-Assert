@@ -767,7 +767,7 @@ export const INITIAL_TIMETABLES: TimetableEntry[] = [
     room: "ST.PAUL'S BLOCK-GROUND FLOOR"
   },
       {
-    id: 'T-SAT-1C',
+    id: 'T-SAT-2C',
     day: 'FRIDAY',
     period: 3,
     startTime: '11:15 AM',
@@ -782,7 +782,7 @@ export const INITIAL_TIMETABLES: TimetableEntry[] = [
     room: "ST.PAUL'S BLOCK-GROUND FLOOR"
   },
       {
-    id: 'T-FRI-1C',
+    id: 'T-FRI-1D',
     day: 'FRIDAY',
     period: 3,
     startTime: '11:15 AM',
@@ -797,7 +797,7 @@ export const INITIAL_TIMETABLES: TimetableEntry[] = [
     room: "ST.PAUL'S BLOCK-GROUND FLOOR"
   },
       {
-    id: 'T-SAT-1C',
+    id: 'T-SAT-2D',
     day: 'FRIDAY',
     period: 3,
     startTime: '11:15 AM',
